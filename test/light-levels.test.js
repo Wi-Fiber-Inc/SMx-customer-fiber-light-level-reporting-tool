@@ -11,6 +11,7 @@ import { SmxHttpError } from "../src/smx-client.js";
 // Checks every agreed receive-power boundary.
 test("rates receive-power readings", () => {
   assert.equal(getReadingHealth(null), "no-signal");
+  assert.equal(getReadingHealth(0), "no-signal");
   assert.equal(getReadingHealth(-30), "no-signal");
   assert.equal(getReadingHealth(-29), "critical");
   assert.equal(getReadingHealth(-28), "critical");

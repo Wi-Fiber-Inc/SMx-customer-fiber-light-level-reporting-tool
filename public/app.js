@@ -1,3 +1,9 @@
+import {
+  getMarkerColor,
+  getSignalColor,
+  getWorstReceivePower,
+} from "./signal-colors.js";
+
 const PAGE_SIZE = 50;
 const state = {
   currentPage: 1,
@@ -102,21 +108,6 @@ function getAddressKey(address) {
     .join("|");
 }
 
-// Returns the map color for one report status.
-function getStatusColor(status) {
-  const variables = {
-    critical: "--critical",
-    error: "--error",
-    healthy: "--healthy",
-    "no-signal": "--no-signal",
-    warning: "--warning",
-  };
-
-  return getComputedStyle(document.documentElement)
-    .getPropertyValue(variables[status] ?? "--no-signal")
-    .trim();
-}
-
 // Picks the worst reading for an address marker.
 function getWorstRecord(records) {
   const priority = {
@@ -127,11 +118,23 @@ function getWorstRecord(records) {
     error: 4,
   };
 
-  return records.reduce((worst, record) =>
-    priority[getDisplayStatus(record)] > priority[getDisplayStatus(worst)]
-      ? record
-      : worst,
-  );
+  return records.reduce((worst, record) => {
+    const recordPriority = priority[getDisplayStatus(record)];
+    const worstPriority = priority[getDisplayStatus(worst)];
+
+    if (recordPriority !== worstPriority) {
+      return recordPriority > worstPriority ? record : worst;
+    }
+
+    const recordPower = getWorstReceivePower(record);
+    const worstPower = getWorstReceivePower(worst);
+
+    if (recordPower === null) {
+      return worstPower === null ? worst : record;
+    }
+
+    return worstPower === null || recordPower >= worstPower ? worst : record;
+  });
 }
 
 // Groups filtered rows into one marker per service address.
@@ -183,8 +186,20 @@ function createMapPopup(records) {
   addPopupLine(popup, "Status", formatStatus(getDisplayStatus(worstRecord)));
   addPopupLine(popup, "ONT Rx", formatDbm(worstRecord.ontReceiveDbm));
   addPopupLine(popup, "OLT Rx", formatDbm(worstRecord.oltReceiveDbm));
+  addPopupLine(
+    popup,
+    "Worst Rx",
+    formatDbm(getWorstReceivePower(worstRecord)),
+  );
   addPopupLine(popup, "ONTs", records.length);
   return popup;
+}
+
+// Colors the receive-power dots shown below the map.
+function renderMapLegend() {
+  for (const dot of document.querySelectorAll("[data-signal-value]")) {
+    dot.style.backgroundColor = getSignalColor(Number(dot.dataset.signalValue));
+  }
 }
 
 // Starts the local Leaflet map and OpenStreetMap layer.
@@ -212,9 +227,8 @@ function renderMap() {
 
   for (const records of groups.mappedGroups) {
     const worstRecord = getWorstRecord(records);
-    const status = getDisplayStatus(worstRecord);
     const location = worstRecord.location;
-    const color = getStatusColor(status);
+    const color = getMarkerColor(worstRecord);
     const marker = window.L.circleMarker(
       [location.latitude, location.longitude],
       {
@@ -481,6 +495,7 @@ function handleTableView() {
 // Connects controls and loads the first report.
 function start() {
   initializeMap();
+  renderMapLegend();
   elements.searchInput.addEventListener("input", handleSearch);
   elements.healthFilter.addEventListener("change", handleFilter);
   elements.clearButton.addEventListener("click", handleClear);

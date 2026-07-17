@@ -41,7 +41,7 @@ function getCollectionError(error) {
 
 // Rates one receive-power reading using the agreed bands.
 export function getReadingHealth(value) {
-  if (value === null || value <= -30) {
+  if (!Number.isFinite(value) || value === 0 || value <= -30) {
     return "no-signal";
   }
 

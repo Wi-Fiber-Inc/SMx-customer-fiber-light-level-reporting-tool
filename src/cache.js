@@ -1,6 +1,8 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+import { getOverallHealth, getReadingHealth } from "./light-levels.js";
+
 export const DEFAULT_CACHE_PATH = path.resolve("data/light-level-cache.json");
 
 // Counts successful readings that match a health status.
@@ -23,12 +25,40 @@ function createCounts(records) {
   };
 }
 
+// Re-rates cached records when receive-power rules change.
+function normalizeRecordHealth(record) {
+  const hasOpticalLevels =
+    Object.hasOwn(record, "ontReceiveDbm") ||
+    Object.hasOwn(record, "oltReceiveDbm");
+
+  if (!hasOpticalLevels) {
+    return record;
+  }
+
+  const ontHealth = getReadingHealth(record.ontReceiveDbm);
+  const oltHealth = getReadingHealth(record.oltReceiveDbm);
+
+  return {
+    ...record,
+    oltHealth,
+    ontHealth,
+    overallHealth: getOverallHealth(ontHealth, oltHealth),
+  };
+}
+
+// Re-rates every record in one cache snapshot.
+function normalizeRecordHealths(records) {
+  return records.map(normalizeRecordHealth);
+}
+
 // Builds the cache file with summary counts.
 export function createCacheSnapshot(records, generatedAt = new Date()) {
+  const normalizedRecords = normalizeRecordHealths(records);
+
   return {
     generatedAt: generatedAt.toISOString(),
-    counts: createCounts(records),
-    records,
+    counts: createCounts(normalizedRecords),
+    records: normalizedRecords,
   };
 }
 
@@ -51,8 +81,11 @@ export async function readCacheSnapshot(cachePath = DEFAULT_CACHE_PATH) {
     throw new Error("The light-level cache has an unexpected format.");
   }
 
+  const records = normalizeRecordHealths(snapshot.records);
+
   return {
     ...snapshot,
-    counts: createCounts(snapshot.records),
+    counts: createCounts(records),
+    records,
   };
 }

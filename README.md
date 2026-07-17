@@ -29,6 +29,7 @@ through the Map and Table buttons. The map:
 
 - Draws one marker per matched service address
 - Uses the worst ONT status when multiple ONTs share an address
+- Colors only the marker fill using the worse ONT or OLT receive power
 - Applies the same search and status filters as the table
 - Shows the address, status, ONT receive power, and OLT receive power on click
 - Reports matched, unmatched, and missing-address counts below the map
@@ -83,8 +84,8 @@ addresses.
 
 The first full pass checked all 416 ONTs in 296 seconds. It returned 401 live
 readings and 15 HTTP 500 failures from the OLT whose 15 ONTs had no operational
-status. The successful readings included 384 healthy and 17 warning rows, with
-no critical rows.
+status. Sixteen successful status calls returned `0/0 dBm`; those values are
+treated as unavailable instead of healthy.
 
 ## Subscriber and address join
 
@@ -210,7 +211,7 @@ Subscriber names and contact details are outside the MVP.
 
 | Status | Receive power |
 | --- | ---: |
-| No signal / offline | `<= -30 dBm` or unavailable |
+| No signal / offline | `0 dBm`, `<= -30 dBm`, or unavailable |
 | Critical | `> -30 dBm` through `-28 dBm` |
 | Warning | `> -28 dBm` through `-25 dBm` |
 | Healthy | `> -25 dBm` |

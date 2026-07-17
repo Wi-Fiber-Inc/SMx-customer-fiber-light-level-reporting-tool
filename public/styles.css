@@ -306,6 +306,27 @@ button:focus-visible {
   gap: 0.8rem;
 }
 
+.signal-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.signal-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--no-signal);
+}
+
+.unavailable-signal-dot {
+  background: var(--no-signal);
+}
+
 .map-popup {
   min-width: 210px;
   color: var(--ink);

@@ -35,9 +35,17 @@ test("builds cache summary counts", () => {
 test("corrects summary counts when reading an existing cache", async () => {
   const cachePath = path.join(os.tmpdir(), `smx-cache-${randomUUID()}.json`);
   const oldSnapshot = {
-    counts: { failed: 1, noSignal: 1, total: 1 },
+    counts: { failed: 1, healthy: 1, noSignal: 1, total: 2 },
     generatedAt: "2026-07-17T12:00:00.000Z",
-    records: [{ error: "http-500", overallHealth: "no-signal" }],
+    records: [
+      { error: "http-500", overallHealth: "no-signal" },
+      {
+        error: null,
+        oltReceiveDbm: 0,
+        ontReceiveDbm: 0,
+        overallHealth: "healthy",
+      },
+    ],
   };
 
   await writeFile(cachePath, JSON.stringify(oldSnapshot), "utf8");
@@ -46,7 +54,9 @@ test("corrects summary counts when reading an existing cache", async () => {
     const snapshot = await readCacheSnapshot(cachePath);
 
     assert.equal(snapshot.counts.failed, 1);
-    assert.equal(snapshot.counts.noSignal, 0);
+    assert.equal(snapshot.counts.healthy, 0);
+    assert.equal(snapshot.counts.noSignal, 1);
+    assert.equal(snapshot.records[1].overallHealth, "no-signal");
   } finally {
     await unlink(cachePath);
   }

@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
     <link rel="stylesheet" href="/styles.css" />
     <script src="/vendor/leaflet/leaflet.js" defer></script>
-    <script src="/app.js" defer></script>
+    <script src="/app.js" type="module"></script>
   </head>
   <body>
     <header class="site-header">
@@ -119,12 +119,31 @@
           ></div>
           <div class="map-footer">
             <p id="map-count" class="map-count">Loading map…</p>
-            <div class="map-legend" aria-label="Map marker statuses">
-              <span class="status-badge status-healthy">Healthy</span>
-              <span class="status-badge status-warning">Warning</span>
-              <span class="status-badge status-critical">Critical</span>
-              <span class="status-badge status-no-signal">No signal</span>
-              <span class="status-badge status-error">API error</span>
+            <div class="map-legend" aria-label="Map marker receive power">
+              <span class="signal-legend-item">
+                <span class="signal-legend-dot" data-signal-value="-15"></span>
+                ≥ -15
+              </span>
+              <span class="signal-legend-item">
+                <span class="signal-legend-dot" data-signal-value="-20"></span>
+                -20
+              </span>
+              <span class="signal-legend-item">
+                <span class="signal-legend-dot" data-signal-value="-25"></span>
+                -25
+              </span>
+              <span class="signal-legend-item">
+                <span class="signal-legend-dot" data-signal-value="-28"></span>
+                -28
+              </span>
+              <span class="signal-legend-item">
+                <span class="signal-legend-dot" data-signal-value="-30"></span>
+                ≤ -30 dBm
+              </span>
+              <span class="signal-legend-item">
+                <span class="signal-legend-dot unavailable-signal-dot"></span>
+                Unavailable
+              </span>
             </div>
           </div>
         </div>
