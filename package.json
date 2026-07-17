@@ -1,0 +1,22 @@
+{
+  "name": "smx-customer-fiber-light-level-reporting-tool",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Read-only reporting for subscriber ONT and OLT receive power from Calix SMx.",
+  "type": "module",
+  "scripts": {
+    "smx:check": "node --env-file-if-exists=.env src/check-smx.js",
+    "smx:check-ont": "node --env-file-if-exists=.env src/check-ont-status.js",
+    "smx:check-subscribers": "node --env-file-if-exists=.env src/check-subscriber-join.js",
+    "smx:collect": "node --env-file-if-exists=.env src/run-collector.js --once",
+    "smx:collector": "node --env-file-if-exists=.env src/run-collector.js",
+    "web": "node --env-file-if-exists=.env src/server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}

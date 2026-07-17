@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Local Calix SMx subscriber light-level report"
+    />
+    <title>SMx Fiber Levels</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-copy">
+        <h1>Fiber Light Levels</h1>
+        <p id="collection-time" class="collection-time">Loading cache…</p>
+      </div>
+      <button id="reload-button" class="secondary-button" type="button">
+        Reload cache
+      </button>
+    </header>
+
+    <main>
+      <section id="summary" class="summary-grid" aria-label="Report summary">
+        <article class="summary-card summary-neutral">
+          <span>Total ONTs</span>
+          <strong id="total-count">—</strong>
+        </article>
+        <article class="summary-card summary-healthy">
+          <span>Healthy</span>
+          <strong id="healthy-count">—</strong>
+        </article>
+        <article class="summary-card summary-warning">
+          <span>Warning</span>
+          <strong id="warning-count">—</strong>
+        </article>
+        <article class="summary-card summary-critical">
+          <span>Critical</span>
+          <strong id="critical-count">—</strong>
+        </article>
+        <article class="summary-card summary-no-signal">
+          <span>No signal</span>
+          <strong id="no-signal-count">—</strong>
+        </article>
+        <article class="summary-card summary-error">
+          <span>API errors</span>
+          <strong id="error-count">—</strong>
+        </article>
+      </section>
+
+      <section class="report-panel" aria-labelledby="report-title">
+        <div class="report-heading">
+          <div>
+            <h2 id="report-title">Subscriber report</h2>
+          </div>
+          <p id="result-count" class="result-count">Loading records…</p>
+        </div>
+
+        <div class="controls">
+          <label class="search-control" for="search-input">
+            <span>Search</span>
+            <input
+              id="search-input"
+              type="search"
+              placeholder="Address, account, ONT, serial, or OLT"
+              autocomplete="off"
+            />
+          </label>
+
+          <label class="filter-control" for="health-filter">
+            <span>Status</span>
+            <select id="health-filter">
+              <option value="all">All statuses</option>
+              <option value="healthy">Healthy</option>
+              <option value="warning">Warning</option>
+              <option value="critical">Critical</option>
+              <option value="no-signal">No signal</option>
+              <option value="error">API error</option>
+            </select>
+          </label>
+
+          <button id="clear-button" class="clear-button" type="button">
+            Clear filters
+          </button>
+        </div>
+
+        <div id="error-banner" class="error-banner" role="alert" hidden></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Status</th>
+                <th scope="col">Service address</th>
+                <th scope="col">Account</th>
+                <th scope="col">ONT</th>
+                <th scope="col">OLT</th>
+                <th scope="col" class="number-column">ONT Rx</th>
+                <th scope="col" class="number-column">OLT Rx</th>
+                <th scope="col">Collected</th>
+                <th scope="col">Error</th>
+              </tr>
+            </thead>
+            <tbody id="report-body"></tbody>
+          </table>
+        </div>
+
+        <div class="pagination" aria-label="Report pagination">
+          <button id="previous-button" class="page-button" type="button">
+            Previous
+          </button>
+          <span id="page-label">Page 1</span>
+          <button id="next-button" class="page-button" type="button">
+            Next
+          </button>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
