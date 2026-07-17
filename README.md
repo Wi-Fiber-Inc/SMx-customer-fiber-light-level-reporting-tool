@@ -56,9 +56,10 @@ Open `http://127.0.0.1:3000`. The report includes:
 - ONT and OLT receive power, collection time, and error details
 - Automatic cache reload every 60 seconds
 
-The server binds to `127.0.0.1` by default because the report contains account
-IDs and service addresses. Do not set `WEB_HOST=0.0.0.0` until the application
-is placed behind proper network access control.
+The server binds to `0.0.0.0` by default so a VM can serve the report through
+any IPv4 interface. Open it with the VM's IPv4 address and `WEB_PORT`. Set
+`WEB_HOST=127.0.0.1` for local-only access. Keep the web port behind firewall
+rules because the report contains account IDs and service addresses.
 
 ## Throttled collection and local cache
 

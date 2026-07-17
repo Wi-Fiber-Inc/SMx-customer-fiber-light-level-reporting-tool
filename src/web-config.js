@@ -1,7 +1,7 @@
-const DEFAULT_WEB_HOST = "127.0.0.1";
+const DEFAULT_WEB_HOST = "0.0.0.0";
 const DEFAULT_WEB_PORT = 3000;
 
-// Reads the local address used by the Express server.
+// Reads the IPv4 address used by the Express server.
 function readWebHost(environment) {
   return environment.WEB_HOST?.trim() || DEFAULT_WEB_HOST;
 }
