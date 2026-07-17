@@ -4,6 +4,39 @@ A read-only Node.js tool for associating Calix SMx subscriber addresses with
 XGS-PON ONT and OLT receive power. The first deliverable will be a searchable
 report; address mapping comes after the report data is verified.
 
+## Address geocoding
+
+The geocoding command sends each unique service address to the U.S. Census
+batch geocoder and stores the result in `data/geocode-cache.json`. Account IDs,
+ONT IDs, names, and contacts are not sent. Existing cache entries are reused,
+so the same address is not submitted again during normal runs.
+
+Run geocoding manually with:
+
+```powershell
+npm run geocode
+```
+
+The Census coordinates are interpolated from street address ranges. They are
+appropriate for an operational overview map, but they should not be treated as
+survey-grade property coordinates. Unmatched addresses remain in the cache so
+they can be reviewed without repeated submissions.
+
+## Map view
+
+The Express report opens on an interactive map and keeps the table available
+through the Map and Table buttons. The map:
+
+- Draws one marker per matched service address
+- Uses the worst ONT status when multiple ONTs share an address
+- Applies the same search and status filters as the table
+- Shows the address, status, ONT receive power, and OLT receive power on click
+- Reports matched, unmatched, and missing-address counts below the map
+
+Map tiles come from OpenStreetMap and are requested only for the area currently
+visible in the browser. Subscriber markers and report data stay inside this
+application.
+
 ## Current iteration: searchable Express report
 
 The local Express application reads the latest cache and never queries SMx when
@@ -195,6 +228,6 @@ Each stage is reviewed before the next one starts:
 4. Subscriber-to-ONT association - complete
 5. Throttled light-level collection and caching - complete
 6. Searchable report table - complete
-7. Address geocoding
-8. Map display
+7. Address geocoding - complete
+8. Map display - complete
 9. CSV export

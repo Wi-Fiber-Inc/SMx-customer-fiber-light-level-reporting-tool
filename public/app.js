@@ -2,8 +2,12 @@ const PAGE_SIZE = 50;
 const state = {
   currentPage: 1,
   filteredRecords: [],
+  fitMapOnNextRender: true,
+  map: null,
+  mapLayer: null,
   records: [],
   snapshot: null,
+  view: "map",
 };
 
 const elements = {
@@ -15,13 +19,19 @@ const elements = {
   healthFilter: document.querySelector("#health-filter"),
   healthyCount: document.querySelector("#healthy-count"),
   nextButton: document.querySelector("#next-button"),
+  mapCount: document.querySelector("#map-count"),
+  mapView: document.querySelector("#map-view"),
+  mapViewButton: document.querySelector("#map-view-button"),
   noSignalCount: document.querySelector("#no-signal-count"),
   pageLabel: document.querySelector("#page-label"),
+  pagination: document.querySelector("#pagination"),
   previousButton: document.querySelector("#previous-button"),
   reloadButton: document.querySelector("#reload-button"),
   reportBody: document.querySelector("#report-body"),
   resultCount: document.querySelector("#result-count"),
   searchInput: document.querySelector("#search-input"),
+  tableView: document.querySelector("#table-view"),
+  tableViewButton: document.querySelector("#table-view-button"),
   totalCount: document.querySelector("#total-count"),
   warningCount: document.querySelector("#warning-count"),
 };
@@ -73,6 +83,185 @@ function formatStatus(status) {
   };
 
   return labels[status] ?? "Unknown";
+}
+
+// Creates a stable browser-side key for one address.
+function getAddressKey(address) {
+  if (!address?.streetLine1) {
+    return null;
+  }
+
+  return [
+    address.streetLine1,
+    address.city,
+    address.state,
+    address.zip,
+    address.country,
+  ]
+    .map((value) => String(value ?? "").trim().replace(/\s+/g, " ").toUpperCase())
+    .join("|");
+}
+
+// Returns the map color for one report status.
+function getStatusColor(status) {
+  const variables = {
+    critical: "--critical",
+    error: "--error",
+    healthy: "--healthy",
+    "no-signal": "--no-signal",
+    warning: "--warning",
+  };
+
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue(variables[status] ?? "--no-signal")
+    .trim();
+}
+
+// Picks the worst reading for an address marker.
+function getWorstRecord(records) {
+  const priority = {
+    healthy: 0,
+    warning: 1,
+    critical: 2,
+    "no-signal": 3,
+    error: 4,
+  };
+
+  return records.reduce((worst, record) =>
+    priority[getDisplayStatus(record)] > priority[getDisplayStatus(worst)]
+      ? record
+      : worst,
+  );
+}
+
+// Groups filtered rows into one marker per service address.
+function groupMapRecords(records) {
+  const mappedByAddress = new Map();
+  const unmatchedAddresses = new Set();
+  let missingAddressRecords = 0;
+
+  for (const record of records) {
+    const key = getAddressKey(record.address);
+    const hasLocation =
+      Number.isFinite(record.location?.latitude) &&
+      Number.isFinite(record.location?.longitude);
+
+    if (!key) {
+      missingAddressRecords += 1;
+    } else if (!hasLocation) {
+      unmatchedAddresses.add(key);
+    } else if (mappedByAddress.has(key)) {
+      mappedByAddress.get(key).push(record);
+    } else {
+      mappedByAddress.set(key, [record]);
+    }
+  }
+
+  return {
+    mappedGroups: [...mappedByAddress.values()],
+    missingAddressRecords,
+    unmatchedAddresses: unmatchedAddresses.size,
+  };
+}
+
+// Adds one label and value to a marker popup.
+function addPopupLine(popup, label, value) {
+  const line = document.createElement("p");
+  line.textContent = `${label}: ${value}`;
+  popup.append(line);
+}
+
+// Builds the details shown when a marker is selected.
+function createMapPopup(records) {
+  const worstRecord = getWorstRecord(records);
+  const popup = document.createElement("div");
+  const address = document.createElement("strong");
+
+  popup.className = "map-popup";
+  address.textContent = formatAddress(worstRecord.address);
+  popup.append(address);
+  addPopupLine(popup, "Status", formatStatus(getDisplayStatus(worstRecord)));
+  addPopupLine(popup, "ONT Rx", formatDbm(worstRecord.ontReceiveDbm));
+  addPopupLine(popup, "OLT Rx", formatDbm(worstRecord.oltReceiveDbm));
+  addPopupLine(popup, "ONTs", records.length);
+  return popup;
+}
+
+// Starts the local Leaflet map and OpenStreetMap layer.
+function initializeMap() {
+  state.map = window.L.map("network-map", {
+    preferCanvas: true,
+    zoomControl: true,
+  }).setView([30.23, -98.38], 9);
+  window.L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    keepBuffer: 1,
+    maxZoom: 19,
+    updateWhenIdle: true,
+  }).addTo(state.map);
+  state.mapLayer = window.L.layerGroup().addTo(state.map);
+}
+
+// Draws filtered address markers and updates map coverage.
+function renderMap() {
+  const groups = groupMapRecords(state.filteredRecords);
+  const bounds = [];
+
+  state.mapLayer.clearLayers();
+
+  for (const records of groups.mappedGroups) {
+    const worstRecord = getWorstRecord(records);
+    const status = getDisplayStatus(worstRecord);
+    const location = worstRecord.location;
+    const color = getStatusColor(status);
+    const marker = window.L.circleMarker(
+      [location.latitude, location.longitude],
+      {
+        color,
+        fillColor: color,
+        fillOpacity: 1,
+        radius: 6,
+        weight: 2,
+      },
+    );
+
+    marker.bindPopup(createMapPopup(records));
+    marker.addTo(state.mapLayer);
+    bounds.push([location.latitude, location.longitude]);
+  }
+
+  elements.mapCount.textContent =
+    `${groups.mappedGroups.length} mapped addresses · ` +
+    `${groups.unmatchedAddresses} unmatched · ` +
+    `${groups.missingAddressRecords} records without an address`;
+
+  if (state.fitMapOnNextRender && bounds.length > 0) {
+    state.map.fitBounds(bounds, {
+      animate: false,
+      maxZoom: 16,
+      padding: [24, 24],
+    });
+  }
+
+  state.fitMapOnNextRender = false;
+}
+
+// Shows the selected report view.
+function renderView() {
+  const mapActive = state.view === "map";
+
+  elements.mapView.hidden = !mapActive;
+  elements.tableView.hidden = mapActive;
+  elements.pagination.hidden = mapActive;
+  elements.mapViewButton.classList.toggle("active-view-button", mapActive);
+  elements.tableViewButton.classList.toggle("active-view-button", !mapActive);
+  elements.mapViewButton.setAttribute("aria-pressed", String(mapActive));
+  elements.tableViewButton.setAttribute("aria-pressed", String(!mapActive));
+
+  if (mapActive) {
+    setTimeout(() => state.map.invalidateSize(), 0);
+  }
 }
 
 // Builds the text searched for each report row.
@@ -199,6 +388,8 @@ function render() {
   renderSummary();
   renderPager();
   renderRows();
+  renderMap();
+  renderView();
 }
 
 // Loads the newest cache snapshot from Express.
@@ -229,12 +420,14 @@ async function loadReport() {
 // Resets the page when the search text changes.
 function handleSearch() {
   state.currentPage = 1;
+  state.fitMapOnNextRender = true;
   render();
 }
 
 // Resets the page when the status filter changes.
 function handleFilter() {
   state.currentPage = 1;
+  state.fitMapOnNextRender = true;
   render();
 }
 
@@ -243,6 +436,7 @@ function handleClear() {
   elements.searchInput.value = "";
   elements.healthFilter.value = "all";
   state.currentPage = 1;
+  state.fitMapOnNextRender = true;
   render();
   elements.searchInput.focus();
 }
@@ -272,14 +466,29 @@ function handleReload() {
   void loadReport();
 }
 
+// Switches the report to the map.
+function handleMapView() {
+  state.view = "map";
+  renderView();
+}
+
+// Switches the report to the table.
+function handleTableView() {
+  state.view = "table";
+  renderView();
+}
+
 // Connects controls and loads the first report.
 function start() {
+  initializeMap();
   elements.searchInput.addEventListener("input", handleSearch);
   elements.healthFilter.addEventListener("change", handleFilter);
   elements.clearButton.addEventListener("click", handleClear);
   elements.previousButton.addEventListener("click", handlePrevious);
   elements.nextButton.addEventListener("click", handleNext);
   elements.reloadButton.addEventListener("click", handleReload);
+  elements.mapViewButton.addEventListener("click", handleMapView);
+  elements.tableViewButton.addEventListener("click", handleTableView);
   void loadReport();
   setInterval(loadReport, 60_000);
 }

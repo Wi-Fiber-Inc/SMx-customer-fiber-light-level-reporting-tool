@@ -8,7 +8,9 @@
       content="Local Calix SMx subscriber light-level report"
     />
     <title>SMx Fiber Levels</title>
+    <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
     <link rel="stylesheet" href="/styles.css" />
+    <script src="/vendor/leaflet/leaflet.js" defer></script>
     <script src="/app.js" defer></script>
   </head>
   <body>
@@ -55,7 +57,27 @@
           <div>
             <h2 id="report-title">Subscriber report</h2>
           </div>
-          <p id="result-count" class="result-count">Loading records…</p>
+          <div class="report-meta">
+            <p id="result-count" class="result-count">Loading records…</p>
+            <div class="view-switch" aria-label="Report view">
+              <button
+                id="map-view-button"
+                class="view-button active-view-button"
+                type="button"
+                aria-pressed="true"
+              >
+                Map
+              </button>
+              <button
+                id="table-view-button"
+                class="view-button"
+                type="button"
+                aria-pressed="false"
+              >
+                Table
+              </button>
+            </div>
+          </div>
         </div>
 
         <div class="controls">
@@ -88,7 +110,26 @@
 
         <div id="error-banner" class="error-banner" role="alert" hidden></div>
 
-        <div class="table-wrap">
+        <div id="map-view" class="map-view">
+          <div
+            id="network-map"
+            class="network-map"
+            role="region"
+            aria-label="Subscriber light-level map"
+          ></div>
+          <div class="map-footer">
+            <p id="map-count" class="map-count">Loading map…</p>
+            <div class="map-legend" aria-label="Map marker statuses">
+              <span class="status-badge status-healthy">Healthy</span>
+              <span class="status-badge status-warning">Warning</span>
+              <span class="status-badge status-critical">Critical</span>
+              <span class="status-badge status-no-signal">No signal</span>
+              <span class="status-badge status-error">API error</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="table-view" class="table-wrap" hidden>
           <table>
             <thead>
               <tr>
@@ -107,7 +148,12 @@
           </table>
         </div>
 
-        <div class="pagination" aria-label="Report pagination">
+        <div
+          id="pagination"
+          class="pagination"
+          aria-label="Report pagination"
+          hidden
+        >
           <button id="previous-button" class="page-button" type="button">
             Previous
           </button>

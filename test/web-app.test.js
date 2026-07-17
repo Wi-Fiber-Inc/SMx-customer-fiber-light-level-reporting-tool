@@ -48,6 +48,14 @@ test("serves the cached report", async () => {
       response.headers.get("content-security-policy"),
       /default-src 'self'/,
     );
+    assert.match(
+      response.headers.get("content-security-policy"),
+      /https:\/\/tile\.openstreetmap\.org/,
+    );
+    assert.equal(
+      response.headers.get("referrer-policy"),
+      "strict-origin-when-cross-origin",
+    );
   } finally {
     await stopTestServer(server);
   }
@@ -84,6 +92,21 @@ test("serves the report page", async () => {
 
     assert.equal(response.status, 200);
     assert.match(html, /SMx Fiber Levels/);
+  } finally {
+    await stopTestServer(server);
+  }
+});
+
+// Checks that Express serves Leaflet from the local dependency.
+test("serves the local map library", async () => {
+  const app = createWebApp();
+  const { baseUrl, server } = await startTestServer(app);
+
+  try {
+    const response = await fetch(`${baseUrl}/vendor/leaflet/leaflet.js`);
+
+    assert.equal(response.status, 200);
+    assert.match(await response.text(), /Leaflet/);
   } finally {
     await stopTestServer(server);
   }
