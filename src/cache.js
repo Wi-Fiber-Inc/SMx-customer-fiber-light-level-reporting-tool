@@ -3,24 +3,31 @@ import path from "node:path";
 
 export const DEFAULT_CACHE_PATH = path.resolve("data/light-level-cache.json");
 
-// Counts cache records that match a health status.
+// Counts successful readings that match a health status.
 function countHealth(records, status) {
-  return records.filter((record) => record.overallHealth === status).length;
+  return records.filter(
+    (record) => record.error === null && record.overallHealth === status,
+  ).length;
+}
+
+// Builds summary counts from the current records.
+function createCounts(records) {
+  return {
+    critical: countHealth(records, "critical"),
+    failed: records.filter((record) => record.error !== null).length,
+    healthy: countHealth(records, "healthy"),
+    noSignal: countHealth(records, "no-signal"),
+    successful: records.filter((record) => record.error === null).length,
+    total: records.length,
+    warning: countHealth(records, "warning"),
+  };
 }
 
 // Builds the cache file with summary counts.
 export function createCacheSnapshot(records, generatedAt = new Date()) {
   return {
     generatedAt: generatedAt.toISOString(),
-    counts: {
-      critical: countHealth(records, "critical"),
-      failed: records.filter((record) => record.error !== null).length,
-      healthy: countHealth(records, "healthy"),
-      noSignal: countHealth(records, "no-signal"),
-      successful: records.filter((record) => record.error === null).length,
-      total: records.length,
-      warning: countHealth(records, "warning"),
-    },
+    counts: createCounts(records),
     records,
   };
 }
@@ -44,5 +51,8 @@ export async function readCacheSnapshot(cachePath = DEFAULT_CACHE_PATH) {
     throw new Error("The light-level cache has an unexpected format.");
   }
 
-  return snapshot;
+  return {
+    ...snapshot,
+    counts: createCounts(snapshot.records),
+  };
 }

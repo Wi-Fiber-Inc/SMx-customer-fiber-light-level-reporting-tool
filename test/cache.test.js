@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
+import { unlink, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 
-import { createCacheSnapshot } from "../src/cache.js";
+import { createCacheSnapshot, readCacheSnapshot } from "../src/cache.js";
 
 // Checks the summary counts stored with each cache snapshot.
 test("builds cache summary counts", () => {
@@ -20,9 +24,30 @@ test("builds cache summary counts", () => {
     critical: 1,
     failed: 1,
     healthy: 1,
-    noSignal: 1,
+    noSignal: 0,
     successful: 3,
     total: 4,
     warning: 1,
   });
+});
+
+// Checks that an older cache cannot double-count API errors as no signal.
+test("corrects summary counts when reading an existing cache", async () => {
+  const cachePath = path.join(os.tmpdir(), `smx-cache-${randomUUID()}.json`);
+  const oldSnapshot = {
+    counts: { failed: 1, noSignal: 1, total: 1 },
+    generatedAt: "2026-07-17T12:00:00.000Z",
+    records: [{ error: "http-500", overallHealth: "no-signal" }],
+  };
+
+  await writeFile(cachePath, JSON.stringify(oldSnapshot), "utf8");
+
+  try {
+    const snapshot = await readCacheSnapshot(cachePath);
+
+    assert.equal(snapshot.counts.failed, 1);
+    assert.equal(snapshot.counts.noSignal, 0);
+  } finally {
+    await unlink(cachePath);
+  }
 });
