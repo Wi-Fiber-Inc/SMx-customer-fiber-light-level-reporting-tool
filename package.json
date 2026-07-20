@@ -5,6 +5,7 @@
   "description": "Read-only reporting for subscriber ONT and OLT receive power from Calix SMx.",
   "type": "module",
   "scripts": {
+    "start": "node --env-file-if-exists=.env src/start.js",
     "geocode": "node src/run-geocoder.js",
     "smx:check": "node --env-file-if-exists=.env src/check-smx.js",
     "smx:check-ont": "node --env-file-if-exists=.env src/check-ont-status.js",

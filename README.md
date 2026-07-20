@@ -40,8 +40,18 @@ application.
 
 ## Current iteration: searchable Express report
 
-The local Express application reads the latest cache and never queries SMx when
-a page loads or a search runs. Start it with:
+Start the complete application with:
+
+```powershell
+npm start
+```
+
+This starts the Express webpage and runs the first SMx collection immediately.
+New collections start every 15 minutes after that. The page can open while the
+first collection is running and will load the cache when it is ready.
+
+The webpage reads the latest cache and never queries SMx when a page loads or a
+search runs. To start only the webpage for troubleshooting, use:
 
 ```powershell
 npm run web
@@ -67,13 +77,14 @@ The collector runs one serial queue per OLT and shares a global limit of 240
 request starts per minute. This keeps each OLT at one active status call while
 allowing the four OLTs to be checked in parallel.
 
-Run one full collection with:
+The scheduled collector starts automatically with `npm start`. Run one manual
+collection with:
 
 ```powershell
 npm run smx:collect
 ```
 
-Run continuously on a 15-minute cycle with:
+Run only the collector on a 15-minute cycle for troubleshooting with:
 
 ```powershell
 npm run smx:collector
