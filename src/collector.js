@@ -67,8 +67,11 @@ export async function runCollection(config) {
 
 // Runs a collection now and repeats it at the configured interval.
 export async function runCollectionScheduler(config, options = {}) {
+  const afterCollection = options.afterCollection;
   const collect = options.collect ?? runCollection;
   const log = options.log ?? console.log;
+  const logAfterCollectionError =
+    options.logAfterCollectionError ?? printCollectionError;
   const logError = options.logError ?? printCollectionError;
   const now = options.now ?? Date.now;
   const pause = options.pause ?? sleep;
@@ -76,11 +79,21 @@ export async function runCollectionScheduler(config, options = {}) {
 
   while (true) {
     const startedAt = now();
+    let collectionSucceeded = false;
 
     try {
       await collect(config);
+      collectionSucceeded = true;
     } catch (error) {
       logError(error);
+    }
+
+    if (collectionSucceeded && afterCollection) {
+      try {
+        await afterCollection();
+      } catch (error) {
+        logAfterCollectionError(error);
+      }
     }
 
     const waitMs = Math.max(0, intervalMs - (now() - startedAt));

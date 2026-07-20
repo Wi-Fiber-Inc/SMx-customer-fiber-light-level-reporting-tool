@@ -10,11 +10,15 @@ test("keeps scheduling collections after a failed pass", async () => {
   const waits = [];
   let attempts = 0;
   let currentTime = 0;
+  let geocodeRuns = 0;
 
   await assert.rejects(
     runCollectionScheduler(
       { collectionIntervalMinutes: 15 },
       {
+        async afterCollection() {
+          geocodeRuns += 1;
+        },
         async collect() {
           attempts += 1;
           currentTime += 1_000;
@@ -43,6 +47,42 @@ test("keeps scheduling collections after a failed pass", async () => {
   );
 
   assert.equal(attempts, 2);
+  assert.equal(geocodeRuns, 1);
   assert.deepEqual(collectionErrors, ["temporary SMx failure"]);
   assert.deepEqual(waits, [899_000, 899_000]);
+});
+
+// Checks that a Census failure does not stop later collection cycles.
+test("keeps scheduling collections after a geocoding failure", async () => {
+  const stopScheduler = new Error("stop scheduler test");
+  const geocodeErrors = [];
+  let collections = 0;
+
+  await assert.rejects(
+    runCollectionScheduler(
+      { collectionIntervalMinutes: 15 },
+      {
+        async afterCollection() {
+          throw new Error("temporary Census failure");
+        },
+        async collect() {
+          collections += 1;
+        },
+        log() {},
+        logAfterCollectionError(error) {
+          geocodeErrors.push(error.message);
+        },
+        now() {
+          return 0;
+        },
+        async pause() {
+          throw stopScheduler;
+        },
+      },
+    ),
+    stopScheduler,
+  );
+
+  assert.equal(collections, 1);
+  assert.deepEqual(geocodeErrors, ["temporary Census failure"]);
 });

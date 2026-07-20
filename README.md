@@ -11,7 +11,9 @@ batch geocoder and stores the result in `data/geocode-cache.json`. Account IDs,
 ONT IDs, names, and contacts are not sent. Existing cache entries are reused,
 so the same address is not submitted again during normal runs.
 
-Run geocoding manually with:
+`npm start` runs geocoding after each successful SMx collection. Only addresses
+missing from the coordinate cache are submitted. Run geocoding manually for
+troubleshooting with:
 
 ```powershell
 npm run geocode
@@ -47,8 +49,9 @@ npm start
 ```
 
 This starts the Express webpage and runs the first SMx collection immediately.
-New collections start every 15 minutes after that. The page can open while the
-first collection is running and will load the cache when it is ready.
+After a successful collection, any new service addresses are geocoded for the
+map. New collections start every 15 minutes after that. The page can open while
+the first collection is running and will load the caches when they are ready.
 
 The webpage reads the latest cache and never queries SMx when a page loads or a
 search runs. To start only the webpage for troubleshooting, use:

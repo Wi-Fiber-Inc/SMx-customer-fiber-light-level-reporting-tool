@@ -13,13 +13,17 @@ test("starts the web server and scheduled collector together", () => {
     WEB_PORT: "4269",
   };
   const server = { close() {} };
+  const geocode = async () => {};
   let receivedCollectorConfig;
+  let receivedCollectorOptions;
   let receivedWebConfig;
 
   const application = startApplication({
     environment,
-    startCollector(config) {
+    geocode,
+    startCollector(config, options) {
       receivedCollectorConfig = config;
+      receivedCollectorOptions = options;
       return new Promise(() => {});
     },
     startWeb(config) {
@@ -31,5 +35,7 @@ test("starts the web server and scheduled collector together", () => {
   assert.equal(application.server, server);
   assert.equal(receivedCollectorConfig.username, "report-reader");
   assert.equal(receivedCollectorConfig.collectionIntervalMinutes, 20);
+  assert.equal(receivedCollectorOptions.afterCollection, geocode);
+  assert.equal(typeof receivedCollectorOptions.logAfterCollectionError, "function");
   assert.deepEqual(receivedWebConfig, { host: "0.0.0.0", port: 4269 });
 });
